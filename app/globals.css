@@ -2,26 +2,424 @@
 @tailwind components;
 @tailwind utilities;
 
+@custom-variant dark (&:is(.dark *));
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: 0 0% 100%;
+  --foreground: 240 10% 3.9%;
+  --card: 0 0% 100%;
+  --card-foreground: 240 10% 3.9%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 240 10% 3.9%;
+  --primary: 240 5.9% 10%;
+  --primary-foreground: 0 0% 98%;
+  --secondary: 240 4.8% 95.9%;
+  --secondary-foreground: 240 5.9% 10%;
+  --muted: 240 4.8% 95.9%;
+  --muted-foreground: 240 3.8% 46.1%;
+  --accent: 240 4.8% 95.9%;
+  --accent-foreground: 240 5.9% 10%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 240 5.9% 90%;
+  --input: 240 5.9% 90%;
+  --ring: 240 5.9% 10%;
+  --radius: 0.5rem;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+.dark {
+  --background: 240 10% 3.9%;
+  --foreground: 0 0% 98%;
+  --card: 240 10% 3.9%;
+  --card-foreground: 0 0% 98%;
+  --popover: 240 10% 3.9%;
+  --popover-foreground: 0 0% 98%;
+  --primary: 0 0% 98%;
+  --primary-foreground: 240 5.9% 10%;
+  --secondary: 240 3.7% 15.9%;
+  --secondary-foreground: 0 0% 98%;
+  --muted: 240 3.7% 15.9%;
+  --muted-foreground: 240 5% 64.9%;
+  --accent: 240 3.7% 15.9%;
+  --accent-foreground: 0 0% 98%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 240 3.7% 15.9%;
+  --input: 240 3.7% 15.9%;
+  --ring: 240 4.9% 83.9%;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    /* Mejor scroll en móviles */
+    -webkit-overflow-scrolling: touch;
+    /* Prevenir zoom en inputs en iOS */
+    -webkit-text-size-adjust: 100%;
+    /* Mejorar rendering en móviles */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Mejorar tap targets en móviles */
+  button,
+  input,
+  select,
+  textarea {
+    touch-action: manipulation;
+  }
+
+  /* Prevenir zoom automático en inputs en iOS */
+  input[type="text"],
+  input[type="number"],
+  textarea {
+    font-size: 16px;
+  }
+
+  @media (max-width: 768px) {
+
+    input[type="text"],
+    input[type="number"],
+    textarea {
+      font-size: 16px !important;
+    }
   }
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+@theme inline {
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
 }
 
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Mobile-first responsive utilities */
 @layer utilities {
-  .text-balance {
-    text-wrap: balance;
+  .mobile-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .mobile-text-lg {
+    @apply text-lg;
+  }
+
+  @media (max-width: 640px) {
+    .mobile-text-lg {
+      @apply text-base;
+    }
+  }
+
+  .mobile-p-6 {
+    @apply p-6;
+  }
+
+  @media (max-width: 640px) {
+    .mobile-p-6 {
+      @apply p-4;
+    }
+  }
+
+  .mobile-gap-6 {
+    @apply gap-6;
+  }
+
+  @media (max-width: 640px) {
+    .mobile-gap-6 {
+      @apply gap-4;
+    }
+  }
+
+  .mobile-text-8xl {
+    @apply text-8xl;
+  }
+
+  @media (max-width: 640px) {
+    .mobile-text-8xl {
+      @apply text-5xl;
+    }
+  }
+
+  .mobile-text-6xl {
+    @apply text-6xl;
+  }
+
+  @media (max-width: 640px) {
+    .mobile-text-6xl {
+      @apply text-4xl;
+    }
+  }
+}
+
+/* Adding 3D flip animation utilities for Pomodoro card */
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+.transform-style-preserve-3d {
+  transform-style: preserve-3d;
+}
+
+.backface-hidden {
+  backface-visibility: hidden;
+}
+
+.rotate-y-180 {
+  transform: rotateY(180deg);
+}
+
+.duration-600 {
+  transition-duration: 600ms;
+}
+
+.duration-800 {
+  transition-duration: 800ms;
+}
+
+.duration-1000 {
+  transition-duration: 1000ms;
+}
+
+/* Enhanced 3D flip animation with smooth transitions */
+@keyframes card-flip {
+  0% {
+    transform: rotateY(0deg);
+  }
+
+  50% {
+    transform: rotateY(-90deg);
+  }
+
+  100% {
+    transform: rotateY(-180deg);
+  }
+}
+
+.card-flip {
+  animation: card-flip 0.8s ease-in-out;
+}
+
+/* Subtle glow effects for the timer card */
+.timer-glow {
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.1), 0 0 40px rgba(59, 130, 246, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.timer-glow-break {
+  box-shadow: 0 0 20px rgba(34, 197, 94, 0.1), 0 0 40px rgba(34, 197, 94, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+@keyframes flip-in {
+  from {
+    transform: rotateY(-90deg);
+    opacity: 0;
+  }
+
+  to {
+    transform: rotateY(0deg);
+    opacity: 1;
+  }
+}
+
+@keyframes flip-out {
+  from {
+    transform: rotateY(0deg);
+    opacity: 1;
+  }
+
+  to {
+    transform: rotateY(90deg);
+    opacity: 0;
+  }
+}
+
+.flip-in {
+  animation: flip-in 0.6s ease-in-out;
+}
+
+.flip-out {
+  animation: flip-out 0.6s ease-in-out;
+}
+
+.focus-mode {
+  --mode-color: oklch(0.6 0.15 220);
+  /* Elegant blue for focus */
+}
+
+.break-mode {
+  --mode-color: oklch(0.65 0.12 140);
+  /* Softer green for break */
+}
+
+@keyframes pulse-glow {
+
+  0%,
+  100% {
+    opacity: 0.8;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.02);
+  }
+}
+
+.pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in-up {
+  animation: fade-in-up 0.5s ease-out;
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+
+  /* Better mobile scrolling */
+  html {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
+
+  /* Better mobile tap areas */
+  .mobile-tap-area {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Mobile friendly font sizes */
+  .mobile-timer-text {
+    font-size: clamp(3rem, 12vw, 6rem);
+    line-height: 1.1;
+  }
+
+  .mobile-clock-text {
+    font-size: clamp(2.5rem, 10vw, 4rem);
+    line-height: 1.1;
+  }
+
+  /* Mobile navigation improvements */
+  .mobile-nav {
+    position: fixed;
+    top: 1rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 50;
+    max-width: calc(100vw - 2rem);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .mobile-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Better mobile modal */
+  .mobile-modal {
+    max-height: 90vh;
+    margin: 1rem;
+    max-width: calc(100vw - 2rem);
+  }
+
+  /* Mobile safe areas for devices with notch */
+  .mobile-safe-top {
+    padding-top: max(1rem, env(safe-area-inset-top));
+  }
+
+  .mobile-safe-bottom {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+
+  /* Better touch feedback */
+  button:active {
+    transform: scale(0.98);
+    transition: transform 0.1s ease-in-out;
+  }
+}
+
+/* iPhone specific improvements */
+@media (max-width: 428px) {
+  .mobile-timer-text {
+    font-size: clamp(2.5rem, 10vw, 4rem);
+  }
+
+  .mobile-clock-text {
+    font-size: clamp(2rem, 8vw, 3rem);
+  }
+
+  /* Smaller screens need more compact spacing */
+  .mobile-compact {
+    padding: 1rem;
+    gap: 1rem;
+  }
+}
+
+/* Dark mode mobile improvements */
+@media (max-width: 768px) and (prefers-color-scheme: dark) {
+  body {
+    /* Reduce eye strain on mobile dark mode */
+    background-color: hsl(var(--background));
   }
 }
