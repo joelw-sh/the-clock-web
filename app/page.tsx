@@ -30,7 +30,7 @@ export default function HomePage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="h-screen flex items-center justify-center bg-background">
         <div className="text-center">
           <Loader2 className="w-8 h-8 animate-spin text-foreground/60 mx-auto mb-3" />
           <p className="text-sm text-muted-foreground">Cargando...</p>
@@ -44,7 +44,7 @@ export default function HomePage() {
   }
 
   return (
-    <main className="min-h-screen bg-background flex flex-col relative overflow-x-hidden">
+    <main className="h-screen bg-background flex flex-col relative overflow-hidden">
       {/* Navegación superior para desktop */}
       {!isFocusMode && (
         <div className="hidden md:block fixed top-4 left-1/2 transform -translate-x-1/2 z-30">
@@ -111,7 +111,7 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Botón de salir del modo enfoque - Visible en móvil y desktop */}
+      {/* Botón de salir del modo enfoque */}
       {isFocusMode && (
         <div className="fixed top-4 right-4 z-30">
           <Button
@@ -126,37 +126,43 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Contenido principal */}
-      <div className="flex-1 flex items-center justify-center px-4 pt-4 pb-24 md:pb-8">
-        <div className={`w-full transition-all duration-500 ease-in-out ${isFocusMode
-            ? "max-w-7xl"
-            : "max-w-sm sm:max-w-md md:max-w-2xl lg:max-w-3xl"
-          }`}>
-
+      {/* CONTENIDO PRINCIPAL - ARREGLADO */}
+      <div className={`flex-1 flex items-center justify-center p-4 ${!isFocusMode ? 'pt-16 md:pt-20' : ''
+        } ${!isFocusMode ? 'pb-24 md:pb-8' : ''
+        }`}>
+        <div className="w-full h-full flex items-center justify-center">
+          {/* RELOJ - Centrado */}
           {currentView === "clock" && (
-            <div className="animate-in fade-in-0 duration-300">
+            <div className="animate-in fade-in-0 duration-300 flex items-center justify-center w-full">
               <DigitalClock isFocusMode={isFocusMode} />
             </div>
           )}
 
+          {/* POMODORO - Centrado y sin scroll */}
           {currentView === "pomodoro" && (
-            <div className="animate-in fade-in-0 duration-300">
-              <PomodoroTimer
-                config={pomodoroConfig}
-                onConfigOpen={() => setIsConfigOpen(true)}
-                isFocusMode={isFocusMode}
-              />
+            <div className="animate-in fade-in-0 duration-300 w-full h-full flex items-center justify-center">
+              <div className="w-full max-w-2xl">
+                <PomodoroTimer
+                  config={pomodoroConfig}
+                  onConfigOpen={() => setIsConfigOpen(true)}
+                  isFocusMode={isFocusMode}
+                />
+              </div>
             </div>
           )}
 
+          {/* TODO - Con altura controlada */}
           {currentView === "todo" && (
-            <div className="animate-in fade-in-0 duration-300">
-              <TodoList isFocusMode={isFocusMode} />
+            <div className="animate-in fade-in-0 duration-300 w-full h-full flex items-center justify-center">
+              <div className="w-full max-w-6xl h-full max-h-full">
+                <TodoList isFocusMode={isFocusMode} />
+              </div>
             </div>
           )}
 
+          {/* NOTAS - Con altura controlada */}
           {currentView === "notes" && (
-            <div className="animate-in fade-in-0 duration-300">
+            <div className="animate-in fade-in-0 duration-300 w-full h-full">
               <NotesSystem isFocusMode={isFocusMode} />
             </div>
           )}
@@ -166,7 +172,6 @@ export default function HomePage() {
       {/* Navegación inferior para móvil */}
       {!isFocusMode && (
         <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-card/95 backdrop-blur-md border-t border-border/50">
-          {/* Barra de navegación principal */}
           <div className="flex justify-around items-center px-2 pt-2">
             <Button
               variant={currentView === "clock" ? "default" : "ghost"}
@@ -218,14 +223,13 @@ export default function HomePage() {
             </Button>
           </div>
 
-          {/* SimpleUserMenu para móvil - integrado en la barra inferior */}
+          {/* SimpleUserMenu para móvil */}
           <div className="flex justify-center py-2 border-t border-border/30 mt-2">
             <div className="scale-90 transform">
               <SimpleUserMenu />
             </div>
           </div>
 
-          {/* Espacio para safe area en móviles */}
           <div className="h-safe-bottom"></div>
         </div>
       )}
@@ -242,51 +246,34 @@ export default function HomePage() {
         .h-safe-bottom {
           height: max(8px, env(safe-area-inset-bottom));
         }
-        
+
         @supports (height: 100dvh) {
-          .min-h-screen {
-            min-height: 100dvh;
+          .h-screen {
+            height: 100dvh;
           }
         }
-        
-        /* Mejores toques en móviles */
+
         .touch-manipulation {
           touch-action: manipulation;
           -webkit-tap-highlight-color: transparent;
         }
-        
-        /* Prevenir zoom en inputs en móviles */
+
         @media screen and (max-width: 768px) {
-          input[type="text"], 
-          input[type="email"], 
-          textarea, 
+          input[type="text"],
+          input[type="email"],
+          textarea,
           select {
             font-size: 16px;
           }
         }
-        
-        /* Scroll suave */
+
         * {
           scroll-behavior: smooth;
         }
-        
-        /* Mejores transiciones */
+
         .animate-in {
           animation-duration: 0.3s;
           animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        
-        /* Espaciado dinámico para móviles */
-        @media (max-height: 640px) {
-          .pb-24 {
-            padding-bottom: 7rem;
-          }
-        }
-        
-        @media (max-height: 568px) {
-          .pb-24 {
-            padding-bottom: 6rem;
-          }
         }
       `}</style>
     </main>
