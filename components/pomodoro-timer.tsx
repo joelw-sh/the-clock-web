@@ -1,11 +1,21 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Play, Pause, RotateCcw, Coffee, Brain, Settings } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { UserDataManager } from "@/lib/user-data"
+import { AuthService } from "@/lib/auth"
 import { toast } from "@/components/ui/use-toast"
+
+interface PomodoroStats {
+  totalSessions: number
+  focusSessions: number
+  breakSessions: number
+  todayPomodoros: number
+  totalFocusMinutes: number
+  totalBreakMinutes: number
+}
 
 interface TimeConfig {
   hours: number
@@ -36,84 +46,236 @@ export function PomodoroTimer({ config, onConfigOpen, isFocusMode = false }: Pom
   const [timeLeft, setTimeLeft] = useState(0)
   const [isFlipping, setIsFlipping] = useState(false)
   const [sessionStartTime, setSessionStartTime] = useState<Date | null>(null)
+  const [stats, setStats] = useState<PomodoroStats>({
+    totalSessions: 0,
+    focusSessions: 0,
+    breakSessions: 0,
+    todayPomodoros: 0,
+    totalFocusMinutes: 0,
+    totalBreakMinutes: 0
+  })
+  const [showStats, setShowStats] = useState(false)
+
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
 
-  // Calculate total seconds from time config
+  // Inicializar tiempo cuando cambia la configuración o el modo
+  useEffect(() => {
+    const timeConfig = mode === "focus" ? config.focusTime : config.breakTime
+    const newTimeLeft = timeConfig.hours * 3600 + timeConfig.minutes * 60 + timeConfig.seconds
+    setTimeLeft(newTimeLeft)
+  }, [config, mode])
+
+  const loadStats = useCallback(async () => {
+    try {
+      const sessions = await UserDataManager.getPomodoroSessions()
+
+      const focusSessions = sessions.filter(s => s.type === 'focus')
+      const breakSessions = sessions.filter(s => s.type === 'break')
+
+      const today = new Date().toDateString()
+      const todaySessions = sessions.filter(s =>
+        new Date(s.completedAt).toDateString() === today
+      )
+
+      // CONTAR POMODOROS CORRECTAMENTE (1 pomodoro = 1 focus + 1 break completos)
+      let pomodoroCount = 0
+      const todayFocusSessions = todaySessions.filter(s => s.type === 'focus')
+      const todayBreakSessions = todaySessions.filter(s => s.type === 'break')
+
+      // Un pomodoro completo requiere al menos una sesión de focus y una de break
+      pomodoroCount = Math.min(todayFocusSessions.length, todayBreakSessions.length)
+
+      // Calcular minutos de FOCUS y BREAK por separado
+      const totalFocusMinutes = Math.round(
+        focusSessions.reduce((acc, s) => acc + s.duration, 0) / 60
+      )
+
+      const totalBreakMinutes = Math.round(
+        breakSessions.reduce((acc, s) => acc + s.duration, 0) / 60
+      )
+
+      setStats({
+        totalSessions: sessions.length,
+        focusSessions: focusSessions.length,
+        breakSessions: breakSessions.length,
+        todayPomodoros: pomodoroCount,
+        totalFocusMinutes: totalFocusMinutes,
+        totalBreakMinutes: totalBreakMinutes
+      })
+    } catch (error) {
+      console.error('Error loading Pomodoro stats:', error)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!isFocusMode) {
+      loadStats()
+    }
+  }, [loadStats, isFocusMode])
+
+  const playNotificationSound = (type: "focus" | "break") => {
+    try {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
+
+      if (type === "focus") {
+        const frequencies = [800, 600, 500]
+        frequencies.forEach((freq, index) => {
+          const oscillator = audioContext.createOscillator()
+          const gainNode = audioContext.createGain()
+
+          oscillator.connect(gainNode)
+          gainNode.connect(audioContext.destination)
+
+          const startTime = audioContext.currentTime + (index * 0.15)
+          oscillator.frequency.setValueAtTime(freq, startTime)
+
+          gainNode.gain.setValueAtTime(0, startTime)
+          gainNode.gain.linearRampToValueAtTime(0.2, startTime + 0.05)
+          gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + 0.4)
+
+          oscillator.start(startTime)
+          oscillator.stop(startTime + 0.4)
+        })
+      } else {
+        const frequencies = [400, 600, 800]
+        frequencies.forEach((freq, index) => {
+          const oscillator = audioContext.createOscillator()
+          const gainNode = audioContext.createGain()
+
+          oscillator.connect(gainNode)
+          gainNode.connect(audioContext.destination)
+
+          const startTime = audioContext.currentTime + (index * 0.12)
+          oscillator.frequency.setValueAtTime(freq, startTime)
+
+          gainNode.gain.setValueAtTime(0, startTime)
+          gainNode.gain.linearRampToValueAtTime(0.25, startTime + 0.05)
+          gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + 0.35)
+
+          oscillator.start(startTime)
+          oscillator.stop(startTime + 0.35)
+        })
+      }
+    } catch (error) {
+      console.log('No se pudo reproducir el sonido de notificación:', error)
+    }
+  }
+
   const getTotalSeconds = (timeConfig: TimeConfig) => {
     return timeConfig.hours * 3600 + timeConfig.minutes * 60 + timeConfig.seconds
   }
 
-  // Initialize timer with current mode's time
-  useEffect(() => {
-    const currentConfig = mode === "focus" ? config.focusTime : config.breakTime
-    setTimeLeft(getTotalSeconds(currentConfig))
-  }, [mode, config])
-
-  // Save completed pomodoro session to database
   const saveCompletedSession = async (sessionMode: "focus" | "break", duration: number) => {
     try {
-      const session = await UserDataManager.addPomodoroSession(sessionMode, duration)
+      // Aumentar el mínimo a 30 segundos para evitar sesiones muy cortas
+      if (duration < 30) {
+        console.log('Sesión muy corta, no se guardará:', duration);
+        return;
+      }
+
+      console.log(`🔥 GUARDANDO ${sessionMode.toUpperCase()}:`, {
+        mode: sessionMode,
+        duration: Math.round(duration),
+        durationMinutes: (duration / 60).toFixed(1)
+      });
+
+      const token = AuthService.getToken();
+      if (!token) {
+        throw new Error('No hay sesión activa. Inicia sesión nuevamente.');
+      }
+
+      const session = await UserDataManager.addPomodoroSession(sessionMode, Math.round(duration));
+
       if (session) {
+        const minutes = Math.round(duration / 60);
+        const sessionType = sessionMode === "focus" ? "concentración" : "descanso";
+
         toast({
-          title: "Sesión completada",
-          description: `Sesión de ${sessionMode === "focus" ? "concentración" : "descanso"} de ${Math.round(duration / 60)} minutos guardada`
-        })
+          title: "✅ Sesión completada",
+          description: `${sessionType} de ${minutes}min guardada`,
+          duration: 3000
+        });
+
+        console.log(`✅ ${sessionMode.toUpperCase()} guardado:`, {
+          id: session.id,
+          type: session.type,
+          duration: session.duration
+        });
+
+        // Recargar estadísticas inmediatamente
+        loadStats()
       }
     } catch (error) {
-      console.error('Error saving pomodoro session:', error)
+      console.error(`❌ Error guardando ${sessionMode}:`, error);
+
       toast({
-        title: "Error",
-        description: "No se pudo guardar la sesión",
-        variant: "destructive"
-      })
+        title: "❌ Error al guardar sesión",
+        description: error instanceof Error ? error.message : 'Error desconocido',
+        variant: "destructive",
+        duration: 5000
+      });
     }
-  }
+  };
 
-  // Timer countdown logic
+  // Timer principal
   useEffect(() => {
-    if (state === "running" && timeLeft > 0) {
-      intervalRef.current = setInterval(() => {
-        setTimeLeft((prev) => {
-          if (prev <= 1) {
-            setState("idle")
+    if (state === "running") {
+      if (timeLeft > 0) {
+        intervalRef.current = setInterval(() => {
+          setTimeLeft((prev) => prev - 1)
+        }, 1000)
+      } else {
+        // Tiempo terminado
+        setState("idle")
+        playNotificationSound(mode)
 
-            // Calculate session duration and save it
-            if (sessionStartTime) {
-              const sessionDuration = Math.floor((Date.now() - sessionStartTime.getTime()) / 1000)
-              saveCompletedSession(mode, sessionDuration)
-            }
+        // Calcular duración real
+        let duration = 0;
+        if (sessionStartTime) {
+          duration = Math.floor((Date.now() - sessionStartTime.getTime()) / 1000)
+        } else {
+          const timeConfig = mode === "focus" ? config.focusTime : config.breakTime
+          duration = getTotalSeconds(timeConfig)
+        }
 
-            // Switch modes with flip animation
-            setIsFlipping(true)
-            setTimeout(() => {
-              setMode((prevMode) => (prevMode === "focus" ? "break" : "focus"))
-              setIsFlipping(false)
-              setSessionStartTime(null)
-            }, 400)
+        console.log(`⏰ TERMINÓ ${mode.toUpperCase()}, guardando ${duration}s`)
 
-            return 0
-          }
-          return prev - 1
+        // GUARDAR LA SESIÓN QUE TERMINÓ
+        saveCompletedSession(mode, duration)
+
+        // Cambiar de modo
+        const nextMode = mode === "focus" ? "break" : "focus"
+        const currentModeText = mode === "focus" ? "concentración" : "descanso"
+        const nextModeText = nextMode === "focus" ? "concentración" : "descanso"
+
+        toast({
+          title: `¡${currentModeText} completada!`,
+          description: `Cambiando a ${nextModeText}`,
+          duration: 5000
         })
-      }, 1000)
-    } else {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current)
-        intervalRef.current = null
+
+        setIsFlipping(true)
+        setTimeout(() => {
+          setMode(nextMode)
+          setIsFlipping(false)
+          setSessionStartTime(null)
+        }, 400)
       }
     }
 
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current)
+        intervalRef.current = null
       }
     }
-  }, [state, timeLeft, mode, sessionStartTime])
+  }, [state, timeLeft, mode, sessionStartTime, config])
 
   const handleStart = () => {
     setState("running")
     if (!sessionStartTime) {
       setSessionStartTime(new Date())
+      console.log(`🚀 INICIANDO ${mode.toUpperCase()}`)
     }
   }
 
@@ -124,8 +286,8 @@ export function PomodoroTimer({ config, onConfigOpen, isFocusMode = false }: Pom
   const handleReset = () => {
     setState("idle")
     setSessionStartTime(null)
-    const currentConfig = mode === "focus" ? config.focusTime : config.breakTime
-    setTimeLeft(getTotalSeconds(currentConfig))
+    const timeConfig = mode === "focus" ? config.focusTime : config.breakTime
+    setTimeLeft(getTotalSeconds(timeConfig))
   }
 
   const handleModeToggle = () => {
@@ -138,7 +300,6 @@ export function PomodoroTimer({ config, onConfigOpen, isFocusMode = false }: Pom
     }, 400)
   }
 
-  // Format time display
   const formatTime = (seconds: number) => {
     const hours = Math.floor(seconds / 3600)
     const minutes = Math.floor((seconds % 3600) / 60)
@@ -152,6 +313,68 @@ export function PomodoroTimer({ config, onConfigOpen, isFocusMode = false }: Pom
 
   const currentColor = mode === "focus" ? config.colors.focusColor : config.colors.breakColor
 
+  const StatsPanel = () => (
+    <div className="mt-6 space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-light text-foreground/60 uppercase tracking-wider">
+          Estadísticas
+        </h3>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setShowStats(!showStats)}
+          className="text-xs h-6 px-2"
+        >
+          {showStats ? 'Ocultar' : 'Ver'}
+        </Button>
+      </div>
+
+      {showStats && (
+        <div className="grid grid-cols-2 gap-3 animate-in slide-in-from-top-2 duration-300">
+          <div className="bg-card/50 rounded-lg p-3 border border-border/30">
+            <div className="text-lg font-mono" style={{ color: currentColor }}>
+              {stats.todayPomodoros}
+            </div>
+            <div className="text-xs text-foreground/60">Pomodoros Hoy</div>
+            <div className="text-[10px] text-foreground/40 mt-1">
+              (focus + break)
+            </div>
+          </div>
+          <div className="bg-card/50 rounded-lg p-3 border border-border/30">
+            <div className="text-lg font-mono text-foreground">
+              {stats.totalFocusMinutes + stats.totalBreakMinutes}m
+            </div>
+            <div className="text-xs text-foreground/60">Minutos Totales</div>
+          </div>
+          <div className="bg-card/50 rounded-lg p-3 border border-border/30">
+            <div
+              className="text-lg font-mono"
+              style={{ color: config.colors.focusColor }}
+            >
+              {stats.focusSessions}
+            </div>
+            <div className="text-xs text-foreground/60">Sesiones Focus</div>
+            <div className="text-[10px] text-foreground/40">
+              {stats.totalFocusMinutes}m
+            </div>
+          </div>
+          <div className="bg-card/50 rounded-lg p-3 border border-border/30">
+            <div
+              className="text-lg font-mono"
+              style={{ color: config.colors.breakColor }}
+            >
+              {stats.breakSessions}
+            </div>
+            <div className="text-xs text-foreground/60">Sesiones Break</div>
+            <div className="text-[10px] text-foreground/40">
+              {stats.totalBreakMinutes}m
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center space-y-6 sm:space-y-8 px-4">
       {!isFocusMode && (
@@ -160,7 +383,6 @@ export function PomodoroTimer({ config, onConfigOpen, isFocusMode = false }: Pom
         </div>
       )}
 
-      {/* Indicador de modo - Responsivo */}
       <div className="flex items-center space-x-2 mb-2 sm:mb-4">
         <div
           className={cn("w-2 h-2 rounded-full transition-all duration-500", `shadow-lg`)}
@@ -174,7 +396,6 @@ export function PomodoroTimer({ config, onConfigOpen, isFocusMode = false }: Pom
         </span>
       </div>
 
-      {/* Temporizador principal - Altamente responsivo */}
       <div className="perspective-1000">
         <div
           className={cn(
@@ -182,7 +403,6 @@ export function PomodoroTimer({ config, onConfigOpen, isFocusMode = false }: Pom
             isFlipping && "rotate-y-180",
           )}
         >
-          {/* Front face */}
           <div className="backface-hidden">
             <div className="text-center space-y-4 sm:space-y-6">
               <div
@@ -207,7 +427,6 @@ export function PomodoroTimer({ config, onConfigOpen, isFocusMode = false }: Pom
             </div>
           </div>
 
-          {/* Back face */}
           <div className="absolute inset-0 backface-hidden rotate-y-180">
             <div className="text-center space-y-4 sm:space-y-6">
               <div
@@ -234,7 +453,6 @@ export function PomodoroTimer({ config, onConfigOpen, isFocusMode = false }: Pom
         </div>
       </div>
 
-      {/* Controles - Optimizados para móviles */}
       <div className="flex items-center space-x-2 sm:space-x-3 mt-6 sm:mt-8">
         {state === "idle" || state === "paused" ? (
           <Button
@@ -293,7 +511,8 @@ export function PomodoroTimer({ config, onConfigOpen, isFocusMode = false }: Pom
         )}
       </div>
 
-      {/* CSS específico para móviles */}
+      {!isFocusMode && <StatsPanel />}
+
       <style jsx>{`
         @media (max-width: 640px) {
           .mobile-timer-text {

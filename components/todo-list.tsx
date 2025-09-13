@@ -3,8 +3,9 @@
 import { useState, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { UserDataManager, type Todo } from "@/lib/user-data"
-import { Plus, Check, X, Edit2, Loader2, RefreshCw } from "lucide-react"
+import { Plus, Check, X, Edit2, Loader2, RefreshCw, Save } from "lucide-react"
 import { useAuth } from "@/components/auth-provider"
 import { useLiveData } from "@/hooks/use-live-data"
 import { toast } from "@/components/ui/use-toast"
@@ -18,6 +19,7 @@ export function TodoList({ isFocusMode = false }: TodoListProps) {
   const [editingId, setEditingId] = useState<number | null>(null)
   const [editText, setEditText] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [showNewTodoModal, setShowNewTodoModal] = useState(false)
   const { user } = useAuth()
 
   // Función para cargar todos desde la base de datos
@@ -61,6 +63,7 @@ export function TodoList({ isFocusMode = false }: TodoListProps) {
 
       if (newTodoItem) {
         setNewTodo("")
+        setShowNewTodoModal(false)
         toast({
           title: "Tarea creada",
           description: "La tarea se ha añadido correctamente"
@@ -195,10 +198,21 @@ export function TodoList({ isFocusMode = false }: TodoListProps) {
     setTimeout(() => resumeAutoRefresh(), 2000)
   }
 
+  const handleOpenModal = () => {
+    pauseAutoRefresh()
+    setShowNewTodoModal(true)
+  }
+
+  const handleCloseModal = () => {
+    setShowNewTodoModal(false)
+    setNewTodo("")
+    setTimeout(() => resumeAutoRefresh(), 2000)
+  }
+
   if (isLoading) {
     return (
       <div className={`w-full ${isFocusMode ? "max-w-4xl" : "max-w-2xl"} mx-auto`}>
-        <div className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-2xl p-6">
+        <div className="bg-card/50 backdrop-blur-sm border border-border/30 rounded-2xl p-6">
           <div className="flex items-center justify-center py-8">
             <Loader2 className="w-8 h-8 animate-spin text-foreground/60" />
           </div>
@@ -210,177 +224,209 @@ export function TodoList({ isFocusMode = false }: TodoListProps) {
   const completedTodos = todos.filter((todo) => todo.completed)
   const pendingTodos = todos.filter((todo) => !todo.completed)
 
-  return (
-    <div className={`w-full ${isFocusMode ? "max-w-4xl" : "max-w-2xl"} mx-auto`}>
-      <div className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-2xl p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-semibold text-foreground">Tareas</h2>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => refresh()}
-            disabled={isLoading}
-            className="h-8 w-8"
-          >
-            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-          </Button>
-        </div>
+  const TodoItem = ({ todo }: { todo: Todo }) => (
+    <div className="flex items-center gap-3 p-3 bg-background/30 border border-border/20 rounded-xl group hover:bg-background/40 transition-colors">
+      <Button
+        onClick={() => handleToggleTodo(todo.id)}
+        size="icon"
+        variant="ghost"
+        className={`w-5 h-5 rounded-full border transition-all ${todo.completed
+          ? "bg-green-500/20 border-green-500/50 hover:bg-green-500/30"
+          : "border-border/50 hover:bg-primary/20 hover:border-primary/50"
+          }`}
+      >
+        {todo.completed && <Check className="w-3 h-3 text-green-500" />}
+      </Button>
 
-        {/* Add new todo */}
-        <div className="flex gap-2 mb-6">
+      {editingId === todo.id ? (
+        <div className="flex-1 flex gap-2">
           <Input
-            type="text"
-            placeholder="Nueva tarea..."
-            value={newTodo}
-            onChange={(e) => setNewTodo(e.target.value)}
-            onKeyPress={(e) => e.key === "Enter" && handleAddTodo()}
+            value={editText}
+            onChange={(e) => setEditText(e.target.value)}
+            onKeyPress={(e) => e.key === "Enter" && handleSaveEdit()}
             onFocus={() => pauseAutoRefresh()}
-            className="flex-1 bg-background/50 border-border/50 text-foreground placeholder:text-muted-foreground"
+            className="flex-1 bg-background/50 border-border/30 text-foreground rounded-xl"
             disabled={isSubmitting}
+            autoFocus
           />
           <Button
-            onClick={handleAddTodo}
+            onClick={handleSaveEdit}
             size="icon"
-            disabled={isSubmitting || !newTodo.trim()}
-            className="rounded-full bg-primary/20 hover:bg-primary/30 border border-primary/30"
+            variant="ghost"
+            className="w-8 h-8 rounded-full hover:bg-green-500/20"
+            disabled={isSubmitting}
           >
             {isSubmitting ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <Loader2 className="w-4 h-4 animate-spin text-green-500" />
             ) : (
-              <Plus className="w-4 h-4" />
+              <Save className="w-4 h-4 text-green-500" />
             )}
           </Button>
+          <Button
+            onClick={handleCancelEdit}
+            size="icon"
+            variant="ghost"
+            className="w-8 h-8 rounded-full hover:bg-red-500/20"
+            disabled={isSubmitting}
+          >
+            <X className="w-4 h-4 text-red-500" />
+          </Button>
         </div>
-
-        {/* Pending todos */}
-        {pendingTodos.length > 0 && (
-          <div className="space-y-2 mb-6">
-            <h3 className="text-sm font-medium text-muted-foreground mb-3">Pendientes</h3>
-            {pendingTodos.map((todo) => (
-              <div
-                key={todo.id}
-                className="flex items-center gap-3 p-3 bg-background/30 border border-border/30 rounded-lg group hover:bg-background/50 transition-colors"
+      ) : (
+        <>
+          <span className={`flex-1 ${todo.completed ? "text-muted-foreground line-through" : "text-foreground"}`}>
+            {todo.text}
+          </span>
+          <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+            {!todo.completed && (
+              <Button
+                onClick={() => handleStartEdit(todo)}
+                size="icon"
+                variant="ghost"
+                className="w-8 h-8 rounded-full hover:bg-blue-500/20"
               >
-                <Button
-                  onClick={() => handleToggleTodo(todo.id)}
-                  size="icon"
-                  variant="ghost"
-                  className="w-5 h-5 rounded-full border border-border/50 hover:bg-primary/20 hover:border-primary/50"
-                >
-                  <div className="w-2 h-2 rounded-full bg-transparent" />
-                </Button>
-
-                {editingId === todo.id ? (
-                  <div className="flex-1 flex gap-2">
-                    <Input
-                      value={editText}
-                      onChange={(e) => setEditText(e.target.value)}
-                      onKeyPress={(e) => e.key === "Enter" && handleSaveEdit()}
-                      onFocus={() => pauseAutoRefresh()}
-                      className="flex-1 bg-background/50 border-border/50 text-foreground"
-                      disabled={isSubmitting}
-                      autoFocus
-                    />
-                    <Button
-                      onClick={handleSaveEdit}
-                      size="icon"
-                      variant="ghost"
-                      className="w-8 h-8 rounded-full hover:bg-green-500/20"
-                      disabled={isSubmitting}
-                    >
-                      {isSubmitting ? (
-                        <Loader2 className="w-4 h-4 animate-spin text-green-500" />
-                      ) : (
-                        <Check className="w-4 h-4 text-green-500" />
-                      )}
-                    </Button>
-                    <Button
-                      onClick={handleCancelEdit}
-                      size="icon"
-                      variant="ghost"
-                      className="w-8 h-8 rounded-full hover:bg-red-500/20"
-                      disabled={isSubmitting}
-                    >
-                      <X className="w-4 h-4 text-red-500" />
-                    </Button>
-                  </div>
-                ) : (
-                  <>
-                    <span className="flex-1 text-foreground">{todo.text}</span>
-                    <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-                      <Button
-                        onClick={() => handleStartEdit(todo)}
-                        size="icon"
-                        variant="ghost"
-                        className="w-8 h-8 rounded-full hover:bg-blue-500/20"
-                      >
-                        <Edit2 className="w-3 h-3 text-blue-500" />
-                      </Button>
-                      <Button
-                        onClick={() => handleDeleteTodo(todo.id)}
-                        size="icon"
-                        variant="ghost"
-                        className="w-8 h-8 rounded-full hover:bg-red-500/20"
-                      >
-                        <X className="w-3 h-3 text-red-500" />
-                      </Button>
-                    </div>
-                  </>
-                )}
-              </div>
-            ))}
+                <Edit2 className="w-3 h-3 text-blue-500" />
+              </Button>
+            )}
+            <Button
+              onClick={() => handleDeleteTodo(todo.id)}
+              size="icon"
+              variant="ghost"
+              className="w-8 h-8 rounded-full hover:bg-red-500/20"
+            >
+              <X className="w-3 h-3 text-red-500" />
+            </Button>
           </div>
-        )}
+        </>
+      )}
+    </div>
+  )
 
-        {/* Completed todos */}
-        {completedTodos.length > 0 && (
-          <div className="space-y-2">
-            <h3 className="text-sm font-medium text-muted-foreground mb-3">Completadas</h3>
-            {completedTodos.map((todo) => (
-              <div
-                key={todo.id}
-                className="flex items-center gap-3 p-3 bg-background/20 border border-border/20 rounded-lg group hover:bg-background/30 transition-colors opacity-60"
+  return (
+    <>
+      <div className={`w-full ${isFocusMode ? "max-w-6xl" : "max-w-4xl"} mx-auto`}>
+        <div className="bg-card/50 backdrop-blur-sm border border-border/30 rounded-2xl p-6 max-h-[70vh] flex flex-col">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-semibold text-foreground">Tareas</h2>
+            <div className="flex gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => refresh()}
+                disabled={isLoading}
+                className="h-8 w-8"
               >
-                <Button
-                  onClick={() => handleToggleTodo(todo.id)}
-                  size="icon"
-                  variant="ghost"
-                  className="w-5 h-5 rounded-full bg-green-500/20 border border-green-500/50 hover:bg-green-500/30"
-                >
-                  <Check className="w-3 h-3 text-green-500" />
-                </Button>
-                <span className="flex-1 text-muted-foreground line-through">{todo.text}</span>
-                <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Button
-                    onClick={() => handleDeleteTodo(todo.id)}
-                    size="icon"
-                    variant="ghost"
-                    className="w-8 h-8 rounded-full hover:bg-red-500/20"
-                  >
-                    <X className="w-3 h-3 text-red-500" />
-                  </Button>
+                <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+              </Button>
+              <Button
+                onClick={handleOpenModal}
+                size="icon"
+                className="h-10 w-10 rounded-full bg-foreground hover:bg-foreground/90 text-background shadow-lg border-0"
+              >
+                <Plus className="w-5 h-5" />
+              </Button>
+            </div>
+          </div>
+
+          {todos.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground">No hay tareas aún</p>
+              <p className="text-sm text-muted-foreground/70 mt-1">Agrega tu primera tarea</p>
+            </div>
+          ) : (
+            <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-6 overflow-hidden">
+              {/* Tareas Pendientes */}
+              <div className="flex flex-col">
+                <h3 className="text-sm font-medium text-muted-foreground mb-3 flex items-center justify-between">
+                  <span>Pendientes ({pendingTodos.length})</span>
+                </h3>
+                <div className="space-y-2 overflow-y-auto flex-1 pr-2" style={{ maxHeight: 'calc(70vh - 200px)' }}>
+                  {pendingTodos.map((todo) => (
+                    <TodoItem key={todo.id} todo={todo} />
+                  ))}
+                  {pendingTodos.length === 0 && (
+                    <div className="text-center py-8 text-muted-foreground/60 text-sm">
+                      No hay tareas pendientes
+                    </div>
+                  )}
                 </div>
               </div>
-            ))}
-          </div>
-        )}
 
-        {todos.length === 0 && (
-          <div className="text-center py-8">
-            <p className="text-muted-foreground">No hay tareas aún</p>
-            <p className="text-sm text-muted-foreground/70 mt-1">Agrega tu primera tarea arriba</p>
-          </div>
-        )}
+              {/* Tareas Completadas */}
+              <div className="flex flex-col">
+                <h3 className="text-sm font-medium text-muted-foreground mb-3 flex items-center justify-between">
+                  <span>Completadas ({completedTodos.length})</span>
+                </h3>
+                <div className="space-y-2 overflow-y-auto flex-1 pr-2" style={{ maxHeight: 'calc(70vh - 200px)' }}>
+                  {completedTodos.map((todo) => (
+                    <TodoItem key={todo.id} todo={todo} />
+                  ))}
+                  {completedTodos.length === 0 && (
+                    <div className="text-center py-8 text-muted-foreground/60 text-sm">
+                      No hay tareas completadas
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
 
-        {/* Estadísticas */}
-        {todos.length > 0 && (
-          <div className="flex justify-between text-xs text-muted-foreground pt-2 mt-4 border-t border-border/30">
-            <span>Total: {todos.length}</span>
-            <span>Completadas: {completedTodos.length}</span>
-            <span>Pendientes: {pendingTodos.length}</span>
-          </div>
-        )}
+          {/* Estadísticas */}
+          {todos.length > 0 && (
+            <div className="flex justify-between text-xs text-muted-foreground pt-4 mt-4 border-t border-border/30">
+              <span>Total: {todos.length}</span>
+              <span>Progreso: {Math.round((completedTodos.length / todos.length) * 100)}%</span>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+
+      {/* Modal para nueva tarea */}
+      <Dialog open={showNewTodoModal} onOpenChange={handleCloseModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-medium">Nueva Tarea</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <Input
+              placeholder="Escribe tu nueva tarea..."
+              value={newTodo}
+              onChange={(e) => setNewTodo(e.target.value)}
+              onKeyPress={(e) => e.key === "Enter" && handleAddTodo()}
+              className="bg-background/50 border-border/30 text-foreground placeholder:text-muted-foreground rounded-xl"
+              disabled={isSubmitting}
+              autoFocus
+            />
+
+            <div className="flex gap-3 justify-end">
+              <Button
+                onClick={handleCloseModal}
+                size="sm"
+                variant="ghost"
+                className="rounded-xl hover:bg-gray-500/20"
+                disabled={isSubmitting}
+              >
+                <X className="w-4 h-4 mr-2" />
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleAddTodo}
+                size="sm"
+                className="rounded-xl bg-green-500/20 hover:bg-green-500/30 border border-green-500/30"
+                disabled={isSubmitting || !newTodo.trim()}
+              >
+                {isSubmitting ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin text-green-500" />
+                ) : (
+                  <Plus className="w-4 h-4 mr-2 text-green-500" />
+                )}
+                Agregar
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }

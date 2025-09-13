@@ -170,6 +170,17 @@ export function NotesSystem({ isFocusMode = false }: NotesSystemProps) {
     }
   }
 
+  const handleOpenCreate = () => {
+    pauseAutoRefresh()
+    setIsCreating(true)
+  }
+
+  const handleCloseCreate = () => {
+    setIsCreating(false)
+    setNewNote({ title: "", content: "" })
+    setTimeout(() => resumeAutoRefresh(), 2000)
+  }
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
     return date.toLocaleDateString("es-ES", {
@@ -180,15 +191,15 @@ export function NotesSystem({ isFocusMode = false }: NotesSystemProps) {
     })
   }
 
-  const truncateContent = (content: string, maxLength: number = 100) => {
+  const truncateContent = (content: string, maxLength: number = 120) => {
     if (content.length <= maxLength) return content
     return content.substring(0, maxLength) + "..."
   }
 
   if (isLoading) {
     return (
-      <div className={`w-full ${isFocusMode ? "max-w-4xl" : "max-w-2xl"} mx-auto`}>
-        <div className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-2xl p-6">
+      <div className={`w-full ${isFocusMode ? "max-w-6xl" : "max-w-4xl"} mx-auto`}>
+        <div className="bg-card/50 backdrop-blur-sm border border-border/30 rounded-2xl p-6">
           <div className="flex items-center justify-center py-8">
             <Loader2 className="w-8 h-8 animate-spin text-foreground/60" />
           </div>
@@ -198,137 +209,144 @@ export function NotesSystem({ isFocusMode = false }: NotesSystemProps) {
   }
 
   return (
-    <div className={`w-full ${isFocusMode ? "max-w-4xl" : "max-w-2xl"} mx-auto`}>
-      <div className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-2xl p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-semibold text-foreground">Notas</h2>
-          <div className="flex gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => refresh()}
-              disabled={isLoading}
-              className="h-8 w-8"
-            >
-              <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-            </Button>
-            <Button
-              onClick={() => {
-                pauseAutoRefresh()
-                setIsCreating(true)
-              }}
-              size="sm"
-              className="rounded-full bg-primary/20 hover:bg-primary/30 border border-primary/30"
-              disabled={isCreating}
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Nueva nota
-            </Button>
-          </div>
-        </div>
+    <>
+      <div className={`w-full ${isFocusMode ? "max-w-6xl" : "max-w-4xl"} mx-auto`}>
+        <div className="bg-card/50 backdrop-blur-sm border border-border/30 rounded-2xl p-6 max-h-[70vh] flex flex-col">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-semibold text-foreground">Notas</h2>
+            <div className="flex gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => refresh()}
+                disabled={isLoading}
+                className="h-8 w-8"
+              >
+                <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+              </Button>
+              <Button
+                onClick={handleOpenCreate}
+                size="icon"
+                className="h-10 w-10 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg"
+              >
+                <Plus className="h-5 w-5" />
+              </Button>
 
-        {/* Create new note */}
-        {isCreating && (
-          <div className="mb-6 p-4 bg-background/30 border border-border/30 rounded-lg">
-            <div className="space-y-3">
-              <Input
-                placeholder="Título de la nota..."
-                value={newNote.title}
-                onChange={(e) => setNewNote({ ...newNote, title: e.target.value })}
-                onFocus={() => pauseAutoRefresh()}
-                className="bg-background/50 border-border/50 text-foreground placeholder:text-muted-foreground"
-                disabled={isSubmitting}
-              />
-              <Textarea
-                placeholder="Escribe tu nota aquí..."
-                value={newNote.content}
-                onChange={(e) => setNewNote({ ...newNote, content: e.target.value })}
-                onFocus={() => pauseAutoRefresh()}
-                className="bg-background/50 border-border/50 text-foreground placeholder:text-muted-foreground min-h-[120px] resize-none"
-                disabled={isSubmitting}
-              />
-              <div className="flex gap-2 justify-end">
-                <Button
-                  onClick={() => {
-                    setIsCreating(false)
-                    setNewNote({ title: "", content: "" })
-                    setTimeout(() => resumeAutoRefresh(), 2000)
-                  }}
-                  size="sm"
-                  variant="ghost"
-                  className="rounded-full hover:bg-red-500/20"
-                  disabled={isSubmitting}
-                >
-                  <X className="w-4 h-4 mr-2 text-red-500" />
-                  Cancelar
-                </Button>
-                <Button
-                  onClick={handleCreateNote}
-                  size="sm"
-                  className="rounded-full bg-green-500/20 hover:bg-green-500/30 border border-green-500/30"
-                  disabled={isSubmitting || (!newNote.title.trim() && !newNote.content.trim())}
-                >
-                  {isSubmitting ? (
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin text-green-500" />
-                  ) : (
-                    <Save className="w-4 h-4 mr-2 text-green-500" />
-                  )}
-                  Guardar
-                </Button>
-              </div>
             </div>
           </div>
-        )}
 
-        {/* Notes list */}
-        <div className="space-y-4">
-          {notes.length === 0 && !isCreating && (
-            <div className="text-center py-8">
+          {notes.length === 0 ? (
+            <div className="text-center py-12">
               <FileText className="w-12 h-12 text-muted-foreground/50 mx-auto mb-3" />
               <p className="text-muted-foreground">No hay notas aún</p>
               <p className="text-sm text-muted-foreground/70 mt-1">Crea tu primera nota</p>
             </div>
-          )}
-
-          {notes.map((note) => (
-            <div
-              key={note.id}
-              onClick={() => handleOpenEdit(note)}
-              className="p-4 bg-background/30 border border-border/30 rounded-lg group hover:bg-background/50 transition-colors cursor-pointer"
-            >
-              <div className="flex items-start justify-between mb-2">
-                <h3 className="text-lg font-medium text-foreground truncate flex-1 mr-2">{note.title}</h3>
-                <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 shrink-0">
-                  <Button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleOpenEdit(note)
-                    }}
-                    size="icon"
-                    variant="ghost"
-                    className="w-8 h-8 rounded-full hover:bg-blue-500/20"
+          ) : (
+            <div className="flex-1 overflow-y-auto pr-2" style={{ maxHeight: 'calc(70vh - 150px)' }}>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 auto-rows-max">
+                {notes.map((note) => (
+                  <div
+                    key={note.id}
+                    onClick={() => handleOpenEdit(note)}
+                    className="bg-background/40 border border-border/30 rounded-xl p-4 group hover:bg-background/60 transition-all cursor-pointer hover:shadow-lg hover:scale-[1.02] min-h-[160px] max-h-[220px] flex flex-col"
                   >
-                    <Edit2 className="w-3 h-3 text-blue-500" />
-                  </Button>
-                </div>
-              </div>
+                    <div className="flex items-start justify-between mb-3">
+                      <h3 className="text-base font-medium text-foreground line-clamp-2 flex-1 mr-2">
+                        {note.title}
+                      </h3>
+                      <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleOpenEdit(note)
+                          }}
+                          size="icon"
+                          variant="ghost"
+                          className="w-7 h-7 rounded-full hover:bg-blue-500/20"
+                        >
+                          <Edit2 className="w-3 h-3 text-blue-500" />
+                        </Button>
+                      </div>
+                    </div>
 
-              {note.content && (
-                <p className="text-muted-foreground mb-3 leading-relaxed">
-                  {truncateContent(note.content)}
-                </p>
-              )}
+                    <div className="flex-1 overflow-hidden">
+                      {note.content && (
+                        <p className="text-sm text-muted-foreground leading-relaxed line-clamp-4">
+                          {truncateContent(note.content, 100)}
+                        </p>
+                      )}
+                    </div>
 
-              <div className="flex items-center justify-between text-xs text-muted-foreground/70">
-                <span>Creada: {formatDate(note.createdAt)}</span>
-                {note.updatedAt !== note.createdAt && <span>Editada: {formatDate(note.updatedAt)}</span>}
+                    <div className="mt-3 pt-2 border-t border-border/20">
+                      <div className="flex items-center justify-between text-xs text-muted-foreground/70">
+                        <span>{formatDate(note.createdAt)}</span>
+                        {note.updatedAt !== note.createdAt && (
+                          <span className="text-blue-500/70">editada</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
-          ))}
+          )}
         </div>
       </div>
 
-      {/* Edit Note Dialog */}
+      {/* Modal para crear nueva nota */}
+      <Dialog open={isCreating} onOpenChange={handleCloseCreate}>
+        <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-medium">Nueva Nota</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 flex-1 overflow-hidden">
+            <Input
+              placeholder="Título de la nota..."
+              value={newNote.title}
+              onChange={(e) => setNewNote({ ...newNote, title: e.target.value })}
+              className="bg-background/50 border-border/30 text-foreground placeholder:text-muted-foreground rounded-xl"
+              disabled={isSubmitting}
+              autoFocus
+            />
+            <Textarea
+              placeholder="Escribe tu nota aquí..."
+              value={newNote.content}
+              onChange={(e) => setNewNote({ ...newNote, content: e.target.value })}
+              className="bg-background/50 border-border/30 text-foreground placeholder:text-muted-foreground min-h-[300px] resize-none rounded-xl"
+              disabled={isSubmitting}
+            />
+          </div>
+
+          <div className="flex gap-3 justify-end pt-4 border-t border-border/30">
+            <Button
+              onClick={handleCloseCreate}
+              size="sm"
+              variant="ghost"
+              className="rounded-xl hover:bg-gray-500/20"
+              disabled={isSubmitting}
+            >
+              <X className="w-4 h-4 mr-2" />
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleCreateNote}
+              size="sm"
+              className="rounded-xl bg-green-500/20 hover:bg-green-500/30 border border-green-500/30"
+              disabled={isSubmitting || (!newNote.title.trim() && !newNote.content.trim())}
+            >
+              {isSubmitting ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin text-green-500" />
+              ) : (
+                <Save className="w-4 h-4 mr-2 text-green-500" />
+              )}
+              Guardar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal para editar nota */}
       <Dialog open={!!editingNote} onOpenChange={(open) => !open && handleCloseEdit()}>
         <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
           <DialogHeader>
@@ -340,16 +358,14 @@ export function NotesSystem({ isFocusMode = false }: NotesSystemProps) {
               placeholder="Título de la nota..."
               value={editNote.title}
               onChange={(e) => setEditNote({ ...editNote, title: e.target.value })}
-              onFocus={() => pauseAutoRefresh()}
-              className="bg-background/50 border-border/50 text-foreground placeholder:text-muted-foreground"
+              className="bg-background/50 border-border/30 text-foreground placeholder:text-muted-foreground rounded-xl"
               disabled={isSubmitting}
             />
             <Textarea
               placeholder="Contenido de la nota..."
               value={editNote.content}
               onChange={(e) => setEditNote({ ...editNote, content: e.target.value })}
-              onFocus={() => pauseAutoRefresh()}
-              className="bg-background/50 border-border/50 text-foreground placeholder:text-muted-foreground min-h-[300px] resize-none"
+              className="bg-background/50 border-border/30 text-foreground placeholder:text-muted-foreground min-h-[300px] resize-none rounded-xl"
               disabled={isSubmitting}
             />
           </div>
@@ -359,7 +375,7 @@ export function NotesSystem({ isFocusMode = false }: NotesSystemProps) {
               onClick={() => editingNote && handleDeleteNote(editingNote.id)}
               size="sm"
               variant="ghost"
-              className="rounded-full hover:bg-red-500/20"
+              className="rounded-xl hover:bg-red-500/20"
               disabled={isSubmitting}
             >
               <Trash2 className="w-4 h-4 mr-2 text-red-500" />
@@ -369,7 +385,7 @@ export function NotesSystem({ isFocusMode = false }: NotesSystemProps) {
               onClick={handleCloseEdit}
               size="sm"
               variant="ghost"
-              className="rounded-full hover:bg-gray-500/20"
+              className="rounded-xl hover:bg-gray-500/20"
               disabled={isSubmitting}
             >
               <X className="w-4 h-4 mr-2" />
@@ -378,7 +394,7 @@ export function NotesSystem({ isFocusMode = false }: NotesSystemProps) {
             <Button
               onClick={handleSaveEdit}
               size="sm"
-              className="rounded-full bg-green-500/20 hover:bg-green-500/30 border border-green-500/30"
+              className="rounded-xl bg-green-500/20 hover:bg-green-500/30 border border-green-500/30"
               disabled={isSubmitting}
             >
               {isSubmitting ? (
@@ -391,6 +407,22 @@ export function NotesSystem({ isFocusMode = false }: NotesSystemProps) {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+
+      {/* Estilos CSS adicionales para line-clamp */}
+      <style jsx>{`
+        .line-clamp-2 {
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+        }
+        .line-clamp-4 {
+          display: -webkit-box;
+          -webkit-line-clamp: 4;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+        }
+      `}</style>
+    </>
   )
 }

@@ -41,29 +41,44 @@ class ApiClient {
             headers['Authorization'] = `Bearer ${token}`;
         }
 
-
         try {
+            console.log(`API Request: ${options.method || 'GET'} ${url}`, options.body ? JSON.parse(options.body as string) : null);
+            console.log('Headers:', headers); // ← log agregado
+
             const response = await fetch(url, {
                 ...options,
                 headers,
             });
 
+            console.log('API Response Status:', response.status); // ← log agregado
+
             if (!response.ok) {
+                // Obtener más información del error
+                let errorDetails = '';
+                try {
+                    const errorData = await response.json();
+                    errorDetails = errorData.message || errorData.error || `Status: ${response.status}`;
+                } catch {
+                    errorDetails = `HTTP ${response.status}: ${response.statusText}`;
+                }
+
+                console.error('API Error Details:', errorDetails);
+
                 if (response.status === 401) {
                     this.clearToken();
                     window.location.reload();
+                    return;
                 }
-                throw new Error(`HTTP error! status: ${response.status}`);
+
+                throw new Error(errorDetails);
             }
 
-            return await response.json();
+            const data = await response.json();
+            console.log('API Response:', data);
+            return data;
+
         } catch (error) {
             console.error('API request failed:', error);
-            toast({
-                title: 'Error de conexión',
-                description: 'No se pudo conectar con el servidor',
-                variant: 'destructive',
-            });
             throw error;
         }
     }

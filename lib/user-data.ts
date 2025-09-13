@@ -230,7 +230,7 @@ export class UserDataManager {
         id: item.id,
         type: item.data.type,
         duration: item.data.duration,
-        completedAt: item.data.completedAt || item.createdAt
+        completedAt: item.data.completedAt || item.updatedAt  // ← CORREGIDO
       }));
     } catch (error) {
       console.error('Error fetching pomodoro sessions:', error);
@@ -240,11 +240,22 @@ export class UserDataManager {
 
   static async addPomodoroSession(type: "focus" | "break", duration: number): Promise<PomodoroSession | null> {
     try {
+      // Validación de datos antes de enviar
+      if (!type || (type !== "focus" && type !== "break")) {
+        throw new Error('Tipo de sesión inválido');
+      }
+
+      if (!duration || duration <= 0) {
+        throw new Error('Duración inválida');
+      }
+
       const sessionData = {
         type,
-        duration,
+        duration: Math.round(duration), // Asegurar que sea un entero
         completedAt: new Date().toISOString()
       };
+
+      console.log('Enviando sesión de Pomodoro:', sessionData); // Para debug
 
       const response = await apiClient.createItem('pomodoro', sessionData);
 
@@ -256,7 +267,7 @@ export class UserDataManager {
       };
     } catch (error) {
       console.error('Error creating pomodoro session:', error);
-      return null;
+      throw error; // Re-lanzar el error para manejarlo en el componente
     }
   }
 

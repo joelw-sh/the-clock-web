@@ -6,6 +6,9 @@ import { Suspense } from "react";
 import "./globals.css";
 import { AuthProvider } from "@/components/auth-provider";
 
+
+
+
 const dmSans = DM_Sans({
   subsets: ["latin"],
   variable: "--font-dm-sans",
@@ -13,10 +16,24 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Pomodoro Focus - Temporizador Minimalista",
-  description: "Aplicación minimalista de Pomodoro con reloj digital en tiempo real",
-  generator: "v0.app",
-};
+  title: 'The Clock App',
+  description: 'Pomodoro timer and productivity app',
+}
+
+
+// LO SIGUIENTE ROMPE LA WEB
+// Configuración de headers de seguridad para desarrollo
+// export async function generateMetadata() {
+//   return {
+//     title: 'The Clock App',
+//     description: 'Pomodoro timer and productivity app',
+//     other: {
+//       'Content-Security-Policy': process.env.NODE_ENV === 'development'
+//         ? "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: http://192.168.0.110:3001; connect-src 'self' http://192.168.0.110:3001 ws://192.168.0.110:3001"
+//         : "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self';"
+//     }
+//   }
+// }
 
 export default function RootLayout({
   children,
