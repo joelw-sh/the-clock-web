@@ -211,7 +211,7 @@ export function TodoList({ isFocusMode = false }: TodoListProps) {
 
   if (isLoading) {
     return (
-      <div className={`w-full ${isFocusMode ? "max-w-4xl" : "max-w-2xl"} mx-auto`}>
+      <div className="w-full max-w-[90%] mx-auto">
         <div className="bg-card/50 backdrop-blur-sm border border-border/30 rounded-2xl p-6">
           <div className="flex items-center justify-center py-8">
             <Loader2 className="w-8 h-8 animate-spin text-foreground/60" />
@@ -225,14 +225,14 @@ export function TodoList({ isFocusMode = false }: TodoListProps) {
   const pendingTodos = todos.filter((todo) => !todo.completed)
 
   const TodoItem = ({ todo }: { todo: Todo }) => (
-    <div className="flex items-center gap-3 p-3 bg-background/30 border border-border/20 rounded-xl group hover:bg-background/40 transition-colors">
+    <div className="flex items-center gap-3 p-3 bg-background/40 border border-gray-400/30 rounded-xl group hover:bg-background/50 transition-colors">
       <Button
         onClick={() => handleToggleTodo(todo.id)}
         size="icon"
         variant="ghost"
         className={`w-5 h-5 rounded-full border transition-all ${todo.completed
           ? "bg-green-500/20 border-green-500/50 hover:bg-green-500/30"
-          : "border-border/50 hover:bg-primary/20 hover:border-primary/50"
+          : "border-gray-500/50 hover:bg-primary/20 hover:border-primary/50"
           }`}
       >
         {todo.completed && <Check className="w-3 h-3 text-green-500" />}
@@ -245,7 +245,7 @@ export function TodoList({ isFocusMode = false }: TodoListProps) {
             onChange={(e) => setEditText(e.target.value)}
             onKeyPress={(e) => e.key === "Enter" && handleSaveEdit()}
             onFocus={() => pauseAutoRefresh()}
-            className="flex-1 bg-background/50 border-border/30 text-foreground rounded-xl"
+            className="flex-1 bg-background/50 border-gray-600/30 text-foreground rounded-xl"
             disabled={isSubmitting}
             autoFocus
           />
@@ -304,8 +304,8 @@ export function TodoList({ isFocusMode = false }: TodoListProps) {
 
   return (
     <>
-      <div className={`w-full ${isFocusMode ? "max-w-6xl" : "max-w-4xl"} mx-auto`}>
-        <div className="bg-card/50 backdrop-blur-sm border border-border/30 rounded-2xl p-6 max-h-[70vh] flex flex-col">
+      <div className="w-full max-w-[90%] h-[80vh] mx-auto">
+        <div className="bg-card/50 backdrop-blur-sm border border-border/30 rounded-2xl p-6 h-full flex flex-col">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-semibold text-foreground">Tareas</h2>
             <div className="flex gap-2">
@@ -340,7 +340,7 @@ export function TodoList({ isFocusMode = false }: TodoListProps) {
                 <h3 className="text-sm font-medium text-muted-foreground mb-3 flex items-center justify-between">
                   <span>Pendientes ({pendingTodos.length})</span>
                 </h3>
-                <div className="space-y-2 overflow-y-auto flex-1 pr-2" style={{ maxHeight: 'calc(70vh - 200px)' }}>
+                <div className="space-y-2 overflow-y-auto flex-1 pr-2 hide-scrollbar" style={{ maxHeight: 'calc(80vh - 200px)' }}>
                   {pendingTodos.map((todo) => (
                     <TodoItem key={todo.id} todo={todo} />
                   ))}
@@ -357,7 +357,7 @@ export function TodoList({ isFocusMode = false }: TodoListProps) {
                 <h3 className="text-sm font-medium text-muted-foreground mb-3 flex items-center justify-between">
                   <span>Completadas ({completedTodos.length})</span>
                 </h3>
-                <div className="space-y-2 overflow-y-auto flex-1 pr-2" style={{ maxHeight: 'calc(70vh - 200px)' }}>
+                <div className="space-y-2 overflow-y-auto flex-1 pr-2 hide-scrollbar" style={{ maxHeight: 'calc(80vh - 200px)' }}>
                   {completedTodos.map((todo) => (
                     <TodoItem key={todo.id} todo={todo} />
                   ))}
@@ -385,7 +385,7 @@ export function TodoList({ isFocusMode = false }: TodoListProps) {
       <Dialog open={showNewTodoModal} onOpenChange={handleCloseModal}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-lg font-medium">Nueva Tarea</DialogTitle>
+            <DialogTitle className="text-lg font-medium pb-3 border-b border-gray-600/30">Nueva Tarea</DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4">
@@ -394,12 +394,12 @@ export function TodoList({ isFocusMode = false }: TodoListProps) {
               value={newTodo}
               onChange={(e) => setNewTodo(e.target.value)}
               onKeyPress={(e) => e.key === "Enter" && handleAddTodo()}
-              className="bg-background/50 border-border/30 text-foreground placeholder:text-muted-foreground rounded-xl"
+              className="bg-background/50 border-gray-600/30 text-foreground placeholder:text-muted-foreground rounded-xl"
               disabled={isSubmitting}
               autoFocus
             />
 
-            <div className="flex gap-3 justify-end">
+            <div className="flex gap-3 justify-end pt-3">
               <Button
                 onClick={handleCloseModal}
                 size="sm"
@@ -413,13 +413,13 @@ export function TodoList({ isFocusMode = false }: TodoListProps) {
               <Button
                 onClick={handleAddTodo}
                 size="sm"
-                className="rounded-xl bg-green-500/20 hover:bg-green-500/30 border border-green-500/30"
+                className="rounded-xl bg-white hover:bg-gray-100 text-black border border-gray-300"
                 disabled={isSubmitting || !newTodo.trim()}
               >
                 {isSubmitting ? (
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin text-green-500" />
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                 ) : (
-                  <Plus className="w-4 h-4 mr-2 text-green-500" />
+                  <Plus className="w-4 h-4 mr-2" />
                 )}
                 Agregar
               </Button>
@@ -427,6 +427,16 @@ export function TodoList({ isFocusMode = false }: TodoListProps) {
           </div>
         </DialogContent>
       </Dialog>
+
+      <style jsx>{`
+        .hide-scrollbar {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
+      `}</style>
     </>
   )
 }

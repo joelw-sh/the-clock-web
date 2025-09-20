@@ -178,8 +178,8 @@ export default function HomePage() {
               size="sm"
               onClick={() => setCurrentView("clock")}
               className={`flex-1 mx-1 rounded-xl h-14 flex flex-col items-center justify-center gap-1 touch-manipulation transition-all ${currentView === "clock"
-                  ? "bg-primary text-primary-foreground shadow-lg scale-105"
-                  : "hover:bg-accent/60"
+                ? "bg-primary text-primary-foreground shadow-lg scale-105"
+                : "hover:bg-accent/60"
                 }`}
             >
               <Clock className="w-5 h-5" />
@@ -190,8 +190,8 @@ export default function HomePage() {
               size="sm"
               onClick={() => setCurrentView("pomodoro")}
               className={`flex-1 mx-1 rounded-xl h-14 flex flex-col items-center justify-center gap-1 touch-manipulation transition-all ${currentView === "pomodoro"
-                  ? "bg-primary text-primary-foreground shadow-lg scale-105"
-                  : "hover:bg-accent/60"
+                ? "bg-primary text-primary-foreground shadow-lg scale-105"
+                : "hover:bg-accent/60"
                 }`}
             >
               <Timer className="w-5 h-5" />
@@ -202,8 +202,8 @@ export default function HomePage() {
               size="sm"
               onClick={() => setCurrentView("todo")}
               className={`flex-1 mx-1 rounded-xl h-14 flex flex-col items-center justify-center gap-1 touch-manipulation transition-all ${currentView === "todo"
-                  ? "bg-primary text-primary-foreground shadow-lg scale-105"
-                  : "hover:bg-accent/60"
+                ? "bg-primary text-primary-foreground shadow-lg scale-105"
+                : "hover:bg-accent/60"
                 }`}
             >
               <CheckSquare className="w-5 h-5" />
@@ -214,8 +214,8 @@ export default function HomePage() {
               size="sm"
               onClick={() => setCurrentView("notes")}
               className={`flex-1 mx-1 rounded-xl h-14 flex flex-col items-center justify-center gap-1 touch-manipulation transition-all ${currentView === "notes"
-                  ? "bg-primary text-primary-foreground shadow-lg scale-105"
-                  : "hover:bg-accent/60"
+                ? "bg-primary text-primary-foreground shadow-lg scale-105"
+                : "hover:bg-accent/60"
                 }`}
             >
               <FileText className="w-5 h-5" />

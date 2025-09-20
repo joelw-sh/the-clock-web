@@ -198,8 +198,29 @@ export function NotesSystem({ isFocusMode = false }: NotesSystemProps) {
 
   if (isLoading) {
     return (
-      <div className={`w-full ${isFocusMode ? "max-w-6xl" : "max-w-4xl"} mx-auto`}>
+      <div className="w-full max-w-[90%] mx-auto">
         <div className="bg-card/50 backdrop-blur-sm border border-border/30 rounded-2xl p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-semibold text-foreground">Notas</h2>
+            <div className="flex gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => refresh()}
+                disabled={isLoading}
+                className="h-8 w-8"
+              >
+                <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+              </Button>
+              <Button
+                onClick={handleOpenCreate}
+                size="icon"
+                className="h-10 w-10 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg"
+              >
+                <Plus className="h-5 w-5" />
+              </Button>
+            </div>
+          </div>
           <div className="flex items-center justify-center py-8">
             <Loader2 className="w-8 h-8 animate-spin text-foreground/60" />
           </div>
@@ -210,8 +231,8 @@ export function NotesSystem({ isFocusMode = false }: NotesSystemProps) {
 
   return (
     <>
-      <div className={`w-full ${isFocusMode ? "max-w-6xl" : "max-w-4xl"} mx-auto`}>
-        <div className="bg-card/50 backdrop-blur-sm border border-border/30 rounded-2xl p-6 max-h-[70vh] flex flex-col">
+      <div className="w-full max-w-[90%] h-[80vh] mx-auto">
+        <div className="bg-card/50 backdrop-blur-sm border border-border/30 rounded-2xl p-6 h-full flex flex-col">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-semibold text-foreground">Notas</h2>
             <div className="flex gap-2">
@@ -242,13 +263,13 @@ export function NotesSystem({ isFocusMode = false }: NotesSystemProps) {
               <p className="text-sm text-muted-foreground/70 mt-1">Crea tu primera nota</p>
             </div>
           ) : (
-            <div className="flex-1 overflow-y-auto pr-2" style={{ maxHeight: 'calc(70vh - 150px)' }}>
+            <div className="flex-1 overflow-y-auto pr-2 hide-scrollbar" style={{ maxHeight: 'calc(80vh - 150px)' }}>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 auto-rows-max">
                 {notes.map((note) => (
                   <div
                     key={note.id}
                     onClick={() => handleOpenEdit(note)}
-                    className="bg-background/40 border border-border/30 rounded-xl p-4 group hover:bg-background/60 transition-all cursor-pointer hover:shadow-lg hover:scale-[1.02] min-h-[160px] max-h-[220px] flex flex-col"
+                    className="bg-background/40 border border-gray-400/30 rounded-xl p-4 group hover:bg-background/60 transition-all cursor-pointer hover:shadow-lg hover:scale-[1.02] min-h-[160px] max-h-[220px] flex flex-col"
                   >
                     <div className="flex items-start justify-between mb-3">
                       <h3 className="text-base font-medium text-foreground line-clamp-2 flex-1 mr-2">
@@ -295,17 +316,17 @@ export function NotesSystem({ isFocusMode = false }: NotesSystemProps) {
 
       {/* Modal para crear nueva nota */}
       <Dialog open={isCreating} onOpenChange={handleCloseCreate}>
-        <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
-          <DialogHeader>
+        <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-hidden flex flex-col p-0">
+          <DialogHeader className="px-6 py-4 border-b border-gray-600/30">
             <DialogTitle className="text-lg font-medium">Nueva Nota</DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-4 flex-1 overflow-hidden">
+          <div className="space-y-4 flex-1 overflow-hidden px-6 py-4">
             <Input
               placeholder="Título de la nota..."
               value={newNote.title}
               onChange={(e) => setNewNote({ ...newNote, title: e.target.value })}
-              className="bg-background/50 border-border/30 text-foreground placeholder:text-muted-foreground rounded-xl"
+              className="bg-background/50 border-gray-600/30 text-foreground placeholder:text-muted-foreground rounded-none border-0 border-b-2 focus-visible:ring-0 focus-visible:border-primary"
               disabled={isSubmitting}
               autoFocus
             />
@@ -313,17 +334,17 @@ export function NotesSystem({ isFocusMode = false }: NotesSystemProps) {
               placeholder="Escribe tu nota aquí..."
               value={newNote.content}
               onChange={(e) => setNewNote({ ...newNote, content: e.target.value })}
-              className="bg-background/50 border-border/30 text-foreground placeholder:text-muted-foreground min-h-[300px] resize-none rounded-xl"
+              className="bg-background/50 border-gray-600/30 text-foreground placeholder:text-muted-foreground min-h-[300px] resize-none rounded-none border-0"
               disabled={isSubmitting}
             />
           </div>
 
-          <div className="flex gap-3 justify-end pt-4 border-t border-border/30">
+          <div className="flex gap-3 justify-end p-4 border-t border-gray-600/30">
             <Button
               onClick={handleCloseCreate}
               size="sm"
               variant="ghost"
-              className="rounded-xl hover:bg-gray-500/20"
+              className="rounded-none hover:bg-gray-500/20"
               disabled={isSubmitting}
             >
               <X className="w-4 h-4 mr-2" />
@@ -332,13 +353,13 @@ export function NotesSystem({ isFocusMode = false }: NotesSystemProps) {
             <Button
               onClick={handleCreateNote}
               size="sm"
-              className="rounded-xl bg-green-500/20 hover:bg-green-500/30 border border-green-500/30"
+              className="rounded-none bg-white hover:bg-gray-100 text-black border border-gray-300"
               disabled={isSubmitting || (!newNote.title.trim() && !newNote.content.trim())}
             >
               {isSubmitting ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin text-green-500" />
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
               ) : (
-                <Save className="w-4 h-4 mr-2 text-green-500" />
+                <Save className="w-4 h-4 mr-2" />
               )}
               Guardar
             </Button>
@@ -348,34 +369,34 @@ export function NotesSystem({ isFocusMode = false }: NotesSystemProps) {
 
       {/* Modal para editar nota */}
       <Dialog open={!!editingNote} onOpenChange={(open) => !open && handleCloseEdit()}>
-        <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
-          <DialogHeader>
+        <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-hidden flex flex-col p-0">
+          <DialogHeader className="px-6 py-4 border-b border-gray-600/30">
             <DialogTitle className="text-lg font-medium">Editar Nota</DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-4 flex-1 overflow-hidden">
+          <div className="space-y-4 flex-1 overflow-hidden px-6 py-4">
             <Input
               placeholder="Título de la nota..."
               value={editNote.title}
               onChange={(e) => setEditNote({ ...editNote, title: e.target.value })}
-              className="bg-background/50 border-border/30 text-foreground placeholder:text-muted-foreground rounded-xl"
+              className="bg-background/50 border-gray-600/30 text-foreground placeholder:text-muted-foreground rounded-none border-0 border-b-2 focus-visible:ring-0 focus-visible:border-primary"
               disabled={isSubmitting}
             />
             <Textarea
               placeholder="Contenido de la nota..."
               value={editNote.content}
               onChange={(e) => setEditNote({ ...editNote, content: e.target.value })}
-              className="bg-background/50 border-border/30 text-foreground placeholder:text-muted-foreground min-h-[300px] resize-none rounded-xl"
+              className="bg-background/50 border-gray-600/30 text-foreground placeholder:text-muted-foreground min-h-[300px] resize-none rounded-none border-0"
               disabled={isSubmitting}
             />
           </div>
 
-          <div className="flex gap-2 justify-end pt-4 border-t border-border/30">
+          <div className="flex gap-2 justify-end p-4 border-t border-gray-600/30">
             <Button
               onClick={() => editingNote && handleDeleteNote(editingNote.id)}
               size="sm"
               variant="ghost"
-              className="rounded-xl hover:bg-red-500/20"
+              className="rounded-none hover:bg-red-500/20"
               disabled={isSubmitting}
             >
               <Trash2 className="w-4 h-4 mr-2 text-red-500" />
@@ -385,7 +406,7 @@ export function NotesSystem({ isFocusMode = false }: NotesSystemProps) {
               onClick={handleCloseEdit}
               size="sm"
               variant="ghost"
-              className="rounded-xl hover:bg-gray-500/20"
+              className="rounded-none hover:bg-gray-500/20"
               disabled={isSubmitting}
             >
               <X className="w-4 h-4 mr-2" />
@@ -394,13 +415,13 @@ export function NotesSystem({ isFocusMode = false }: NotesSystemProps) {
             <Button
               onClick={handleSaveEdit}
               size="sm"
-              className="rounded-xl bg-green-500/20 hover:bg-green-500/30 border border-green-500/30"
+              className="rounded-none bg-white hover:bg-gray-100 text-black border border-gray-300"
               disabled={isSubmitting}
             >
               {isSubmitting ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin text-green-500" />
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
               ) : (
-                <Save className="w-4 h-4 mr-2 text-green-500" />
+                <Save className="w-4 h-4 mr-2" />
               )}
               Guardar
             </Button>
@@ -408,7 +429,7 @@ export function NotesSystem({ isFocusMode = false }: NotesSystemProps) {
         </DialogContent>
       </Dialog>
 
-      {/* Estilos CSS adicionales para line-clamp */}
+      {/* Estilos CSS adicionales para line-clamp y scrollbar */}
       <style jsx>{`
         .line-clamp-2 {
           display: -webkit-box;
@@ -421,6 +442,13 @@ export function NotesSystem({ isFocusMode = false }: NotesSystemProps) {
           -webkit-line-clamp: 4;
           -webkit-box-orient: vertical;
           overflow: hidden;
+        }
+        .hide-scrollbar {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+          display: none;
         }
       `}</style>
     </>

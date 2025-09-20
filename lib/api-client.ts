@@ -1,6 +1,6 @@
 import { toast } from '@/components/ui/use-toast';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://192.168.0.110:3002';
 
 class ApiClient {
     private token: string | null = null;
